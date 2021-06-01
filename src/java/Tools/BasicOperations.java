@@ -3,7 +3,6 @@ package Tools;
 import Tools.exceptions.Different;
 import Tools.exceptions.NotFound;
 import org.apache.http.Header;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -20,9 +19,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.http.util.EntityUtils;
 
 import java.io.*;
 import java.util.List;
@@ -30,13 +29,20 @@ import java.util.List;
 public class BasicOperations {
 
 
-    final int TIME_OUT = 10000;
+    final int TIME_OUT = 15000;
     public CookieMonster cookieMonster = new CookieMonster();
     HttpClient http = null;
     org.apache.http.client.config.RequestConfig RequestConfig;
     Header[] basicHeaders;
 
     boolean withProxy = false;
+
+    public BasicOperations() {
+        //refreshHeader();
+        this.withProxy = false;
+        buildHttpClient();
+
+    }
 
     public BasicOperations(boolean withProxy) {
         //refreshHeader();
@@ -70,10 +76,9 @@ public class BasicOperations {
                 .build();
 
         PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(reg);
-
         HttpClientBuilder builder = HttpClientBuilder.create();
 
-        if(withProxy) {
+        if (withProxy) {
             builder.setConnectionManager(cm);
         }
         builder.setDefaultCookieStore(cookieMonster.httpCookieStore);
@@ -87,8 +92,6 @@ public class BasicOperations {
         requestBuilder.setConnectTimeout(TIME_OUT);
         requestBuilder.setConnectionRequestTimeout(TIME_OUT);
         requestBuilder.setSocketTimeout(60000);
-
-        //requestBuilder.setProxy(ProxyLoader.loadProxy());
         RequestConfig = requestBuilder.build();
 
         http = null;
@@ -98,30 +101,22 @@ public class BasicOperations {
 
     public String basicGET(String url) throws Different, NotFound, IOException {
 
-
         HttpGet httpGet = new HttpGet(url);
         httpGet.setConfig(this.RequestConfig);
         httpGet.setHeaders(basicHeaders);
 
         HttpResponse httpResponse = http.execute(httpGet);
 
-        String return_string = InputToString(httpResponse.getEntity().getContent());
-
-        //cookieMonster.displayCookies();
-        httpResponse.getEntity().getContent().close();
-
-
         if (httpResponse.getStatusLine().getStatusCode() == 404) {
-            httpGet.completed();
-            httpGet.releaseConnection();
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new NotFound();
         } else if (httpResponse.getStatusLine().getStatusCode() != 200) {
-            httpGet.completed();
-            httpGet.releaseConnection();
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
-            httpGet.completed();
-            httpGet.releaseConnection();
+
+            String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
             return return_string;
         }
 
@@ -129,7 +124,6 @@ public class BasicOperations {
 
 
     public String basicPost(String json_payload, String url) throws IOException, NotFound, Different {
-
 
         HttpPost httpPost = new HttpPost(url);
         httpPost.setConfig(RequestConfig);
@@ -139,28 +133,19 @@ public class BasicOperations {
         httpPost.setEntity(entity);
         HttpResponse httpResponse = http.execute(httpPost);
 
-        String return_string = InputToString(httpResponse.getEntity().getContent());
-
-        httpResponse.getEntity().getContent().close();
-
 
         if (httpResponse.getStatusLine().getStatusCode() == 404) {
-            httpPost.completed();
-            httpPost.releaseConnection();
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new NotFound();
         } else if (httpResponse.getStatusLine().getStatusCode() != 200) {
-            httpPost.completed();
-            httpPost.releaseConnection();
-
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
-
         } else {
-            httpPost.completed();
-            httpPost.releaseConnection();
-
+            String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
+            return return_string;
         }
 
-        return return_string;
     }
 
 
@@ -175,7 +160,6 @@ public class BasicOperations {
         httpPost.setEntity(urlEncodedFormEntity);
         HttpResponse httpResponse = http.execute(httpPost);
 
-        String return_string = InputToString(httpResponse.getEntity().getContent());
 
         FileWriter fileWriter = new FileWriter("json_responses.txt", true);
         //fileWriter.append("\n"+return_string);
@@ -187,34 +171,26 @@ public class BasicOperations {
         }
 
 
-        httpResponse.getEntity().getContent().close();
-
         if (httpResponse.getStatusLine().getStatusCode() == 404) {
-            httpPost.completed();
-            httpPost.releaseConnection();
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new NotFound();
         } else if (httpResponse.getStatusLine().getStatusCode() != 200) {
-            httpPost.completed();
-            httpPost.releaseConnection();
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
-
         } else {
-            httpPost.completed();
-            httpPost.releaseConnection();
-
+            String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
+            return return_string;
         }
 
-        return return_string;
     }
 
 
-    public String InputToString(InputStream in) throws IOException {
+    public String InputStreamToStringAndClose(InputStream in) throws IOException {
         try {
             StringBuilder stringBuilder = new StringBuilder();
             Reader reader = new InputStreamReader(in);
             int data = reader.read();
-
-
             while (data != -1) {
                 stringBuilder.append((char) data);
                 data = reader.read();
