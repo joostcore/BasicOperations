@@ -1,6 +1,5 @@
 package Tools;
 
-import Tools.exceptions.EndOfEntries;
 import com.google.gson.Gson;
 import com.opencsv.CSVWriter;
 import org.apache.poi.ss.usermodel.Cell;
@@ -10,13 +9,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 public class CrawlerParent {
 
 
-    public static void toFiles(List<Object> obj,String filename) throws IOException {
+    public static void toFiles(List<Object> obj, String filename) throws IOException {
 
 
         toJsonFile(obj, filename);
@@ -46,25 +45,40 @@ public class CrawlerParent {
                 CSVWriter.DEFAULT_ESCAPE_CHARACTER,
                 CSVWriter.DEFAULT_LINE_END);
 
-        List<String> fields = getObjectFieldNames(objects.get(0));
+        HashMap<String, Object> fields = getObjectProperties(objects.get(0));
+
 
         String[] field_return = new String[fields.size()];
-        for (int i = 0; i < fields.size(); i++) {
-            field_return[i] = fields.get(i) != null ? (String) fields.get(i) : "";
+        int f = 0;
+        for (String s : fields.keySet()) {
+            field_return[f] = s;
+            f++;
         }
         writer.writeNext(field_return);
         csvRecords.add(field_return);
 
         for (Object object : objects) {
-            List<Object> properties = getObjectProperties(object);
+            HashMap<String, Object> properties = getObjectProperties(object);
             String[] prop_return = new String[properties.size()];
-            for (int i = 0; i < properties.size(); i++) {
-                prop_return[i] = properties.get(i) != null ? (String) properties.get(i) : "";
+            int l = 0;
+            for (Object s : fields.values()) {
+                if (s == null) {
+                    prop_return[l] = "";
+                } else if (s.getClass().equals(new String().getClass())) {
+                    prop_return[l] = (String) s;
+                } else if (s.getClass().equals(new String[]{}.getClass())) {
+                    StringBuilder sb = new StringBuilder();
+                    for (String str : (String[]) s) {
+                        sb.append(str + ", ");
+                    }
+                    prop_return[l] = sb.toString();
+                } else {
+                    prop_return[l] = "";
+                }
+                l++;
             }
-
             writer.writeNext(prop_return);
             csvRecords.add(prop_return);
-
         }
 
         writer.flush();
@@ -75,6 +89,7 @@ public class CrawlerParent {
     public static void toExcelFile(List<Object> objects, String filename) throws IOException {
 
 
+        String string = new String();
         //Create blank workbook
         XSSFWorkbook workbook = new XSSFWorkbook();
 
@@ -86,22 +101,34 @@ public class CrawlerParent {
         int counter = 1;
 
         row = spreadsheet.createRow(0);
-        List<String> objectFieldNames = getObjectFieldNames(objects.get(0));
+        HashMap<String, Object> objectFieldNames = getObjectProperties(objects.get(0));
         int cellid = 0;
-        for (String obje : objectFieldNames) {
+        for (String obje : objectFieldNames.keySet()) {
             Cell cell = row.createCell(cellid++);
-            cell.setCellValue((String) obje);
+            cell.setCellValue(obje);
         }
 
 
         for (Object obj : objects) {
             row = spreadsheet.createRow(counter++);
-            List<Object> objectArr = getObjectProperties(obj);
+            HashMap<String, Object> objectArr = getObjectProperties(obj);
             cellid = 0;
 
-            for (Object obje : objectArr) {
+            for (Object obje : objectArr.values()) {
                 Cell cell = row.createCell(cellid++);
-                cell.setCellValue((String) obje);
+                if (obje == null) {
+                    cell.setCellValue("");
+                } else if (obje.getClass().equals(new String().getClass())) {
+                    cell.setCellValue((String) obje);
+                } else if (obje.getClass().equals(new String[]{}.getClass())) {
+                    StringBuilder sb = new StringBuilder();
+                    for (String str : (String[]) obje) {
+                        sb.append(str + ", ");
+                    }
+                    cell.setCellValue(sb.toString());
+                } else {
+                    cell.setCellValue("");
+                }
             }
         }
         //Write the workbook in file system
@@ -111,16 +138,19 @@ public class CrawlerParent {
         out.close();
     }
 
-    public static List<Object> getObjectProperties(Object object) {
+    private static HashMap<String, Object> getObjectProperties(Object object) {
 
         Class<?> cl = object.getClass();
-        List<Object> allObjects = new ArrayList<Object>();
+        HashMap<String, Object> allObjects = getObjectFieldNames(cl);
         for (java.lang.reflect.Field f : cl.getDeclaredFields()) {
             f.setAccessible(true);
             try {
                 Object o = f.get(object);
                 if (!f.getName().equals("this$0")) {
-                    allObjects.add(o);
+                    allObjects.put(f.getName(), o);
+                    if (o.getClass().getPackage().getName().contains(object.getClass().getPackage().getName())) {
+                        allObjects.putAll(getAllSubPropertiesOfAnObject(o));
+                    }
                 }
             } catch (Exception e) {
             }
@@ -128,15 +158,39 @@ public class CrawlerParent {
         return allObjects;
     }
 
-    public static List<String> getObjectFieldNames(Object object) {
 
-        Class<?> cl = object.getClass();
-        List<String> allObjects = new ArrayList<String>();
+    private static HashMap<String, Object> getAllSubPropertiesOfAnObject(Object obj) {
+
+        //watch out for depth
+        Class<?> cl = obj.getClass();
+        HashMap<String, Object> allObjects = new HashMap<>();
         for (java.lang.reflect.Field f : cl.getDeclaredFields()) {
             f.setAccessible(true);
             try {
+                Object o = f.get(obj);
                 if (!f.getName().equals("this$0")) {
-                    allObjects.add(f.getName().replace("__","-").replace("_"," "));
+                    allObjects.put(f.getName(), o);
+                    if (o.getClass().getPackage().getName().contains(obj.getClass().getPackage().getName())) {
+                        allObjects.putAll(getAllSubPropertiesOfAnObject(o));
+                    }
+                }
+            } catch (Exception e) {
+            }
+        }
+        return allObjects;
+    }
+
+
+    private static HashMap<String, Object> getObjectFieldNames(Class<?> object) {
+        HashMap<String, Object> allObjects = new HashMap<>();
+        for (java.lang.reflect.Field f : object.getDeclaredFields()) {
+            f.setAccessible(true);
+            try {
+                if (!f.getName().equals("this$0")) {
+                    allObjects.put(f.getName().replace("__", "-").replace("_", " "), null);
+                    if (f.getType().getPackage().getName().contains(object.getPackage().getName())) {
+                        allObjects.putAll(getObjectFieldNames(f.getType()));
+                    }
                 }
             } catch (Exception e) {
             }

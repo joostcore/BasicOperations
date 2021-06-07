@@ -44,6 +44,18 @@ public class BasicOperations {
 
     }
 
+    public BasicOperations(Header[] headers) {
+        //refreshHeader();
+        basicHeaders = headers;
+        buildHttpClient();
+    }
+
+    public BasicOperations(Header[] headers, boolean withProxy) {
+        //refreshHeader();
+        this.withProxy = withProxy;
+        buildHttpClient();
+    }
+
     public BasicOperations(boolean withProxy) {
         //refreshHeader();
         this.withProxy = withProxy;
