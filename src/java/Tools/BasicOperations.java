@@ -35,6 +35,8 @@ public class BasicOperations {
     org.apache.http.client.config.RequestConfig RequestConfig;
     Header[] basicHeaders;
 
+    boolean logResponse = false;
+
     boolean withProxy = false;
 
     public BasicOperations() {
@@ -63,6 +65,13 @@ public class BasicOperations {
 
     }
 
+    public BasicOperations(boolean withProxy, boolean logging) {
+        //refreshHeader();
+        this.withProxy = withProxy;
+        this.logResponse = logging;
+        buildHttpClient();
+
+    }
 
     public void buildHttpClient() {
 
@@ -129,6 +138,12 @@ public class BasicOperations {
 
             String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
+            if (this.logResponse) {
+                FileWriter fileWriter = new FileWriter("json_responses.txt", true);
+                fileWriter.append("\n" + return_string);
+                fileWriter.flush();
+
+            }
             return return_string;
         }
 
@@ -155,6 +170,12 @@ public class BasicOperations {
         } else {
             String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
+            if (this.logResponse) {
+                FileWriter fileWriter = new FileWriter("json_responses.txt", true);
+                fileWriter.append("\n" + return_string);
+                fileWriter.flush();
+
+            }
             return return_string;
         }
 
@@ -173,14 +194,7 @@ public class BasicOperations {
         HttpResponse httpResponse = http.execute(httpPost);
 
 
-        FileWriter fileWriter = new FileWriter("json_responses.txt", true);
-        //fileWriter.append("\n"+return_string);
 
-        try {
-            Thread.sleep((int) ((Math.random() * 1000) + 1));
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
 
 
         if (httpResponse.getStatusLine().getStatusCode() == 404) {
@@ -192,6 +206,12 @@ public class BasicOperations {
         } else {
             String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
+            if (this.logResponse) {
+                FileWriter fileWriter = new FileWriter("json_responses.txt", true);
+                fileWriter.append("\n" + return_string);
+                fileWriter.flush();
+
+            }
             return return_string;
         }
 
