@@ -9,6 +9,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class CrawlerParent {
@@ -150,17 +151,20 @@ public class CrawlerParent {
                 synchronized (f) {
                     f.setAccessible(true);
                     if (object == null) {
-                        allObjects.add(new FieldHolder(f.getName(), null));
-                        if (f.getType().isArray()) {
+                        if(!Modifier.isTransient(f.getModifiers())) {
 
-                        } else {
-                            if (f.getType().getPackage().getName().contains(cl.getPackage().getName())) {
-                                allObjects.addAll(getAllSubPropertiesOfAnObject(null, f.getType()));
+                            allObjects.add(new FieldHolder(f.getName(), null));
+                            if (f.getType().isArray()) {
+
+                            } else {
+                                if (f.getType().getPackage().getName().contains(cl.getPackage().getName())) {
+                                    allObjects.addAll(getAllSubPropertiesOfAnObject(null, f.getType()));
+                                }
                             }
                         }
                     } else {
                         Object o = f.get(object);
-                        if (!f.getName().equals("this$0")) {
+                        if (!f.getName().equals("this$0") && !Modifier.isTransient(f.getModifiers())) {
                             allObjects.add(new FieldHolder(f.getName(), o));
                             if (f.getType().isArray()) {
 
@@ -195,17 +199,19 @@ public class CrawlerParent {
                 synchronized (f) {
                     f.setAccessible(true);
                     if (object == null) {
-                        allObjects.add(new FieldHolder(f.getName(), null));
-                        if (f.getType().isArray()) {
+                        if(!Modifier.isTransient(f.getModifiers())) {
+                            allObjects.add(new FieldHolder(f.getName(), null));
+                            if (f.getType().isArray()) {
 
-                        } else {
-                            if (f.getType().getPackage().getName().contains(cl.getPackage().getName())) {
-                                allObjects.addAll(getAllSubPropertiesOfAnObject(null, f.getType()));
+                            } else {
+                                if (f.getType().getPackage().getName().contains(cl.getPackage().getName())) {
+                                    allObjects.addAll(getAllSubPropertiesOfAnObject(null, f.getType()));
+                                }
                             }
                         }
                     } else {
                         Object o = f.get(object);
-                        if (!f.getName().equals("this$0")) {
+                        if (!f.getName().equals("this$0") && !Modifier.isTransient(f.getModifiers())) {
                             allObjects.add(new FieldHolder(f.getName(), o));
                             if (f.getType().isArray()) {
 
