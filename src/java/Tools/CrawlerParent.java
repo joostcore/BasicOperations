@@ -8,9 +8,8 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.lang.reflect.Field;
+import java.util.*;
 
 public class CrawlerParent {
 
@@ -45,25 +44,27 @@ public class CrawlerParent {
                 CSVWriter.DEFAULT_ESCAPE_CHARACTER,
                 CSVWriter.DEFAULT_LINE_END);
 
-        HashMap<String, Object> fields = getObjectProperties(objects.get(0));
+
+        List<FieldHolder> fields = getObjectProperties(objects.get(0));
 
 
         String[] field_return = new String[fields.size()];
         int f = 0;
-        for (String s : fields.keySet()) {
-            field_return[f] = s;
+        for (FieldHolder s : fields) {
+            field_return[f] = s.getName();
             f++;
         }
         writer.writeNext(field_return);
         csvRecords.add(field_return);
 
         for (Object object : objects) {
-            HashMap<String, Object> properties = getObjectProperties(object);
+            List<FieldHolder> properties = getObjectProperties(object);
             String[] prop_return = new String[properties.size()];
             int l = 0;
-            for (Object s : fields.values()) {
+            for (FieldHolder fieldHolder : properties) {
+                Object s = fieldHolder.getObject();
                 if (s == null) {
-                    prop_return[l] = "";
+                    prop_return[l] = " ";
                 } else if (s.getClass().equals(new String().getClass())) {
                     prop_return[l] = (String) s;
                 } else if (s.getClass().equals(new String[]{}.getClass())) {
@@ -72,18 +73,19 @@ public class CrawlerParent {
                         sb.append(str + ", ");
                     }
                     prop_return[l] = sb.toString();
-                } else {
-                    prop_return[l] = "";
+                }
+                else if(s.getClass().isArray()){
+                    prop_return[l] = Arrays.deepToString((Object[]) s);
+                }
+                else {
+                    prop_return[l] = " ";
                 }
                 l++;
             }
             writer.writeNext(prop_return);
             csvRecords.add(prop_return);
         }
-
         writer.flush();
-
-
     }
 
     public static void toExcelFile(List<Object> objects, String filename) throws IOException {
@@ -98,26 +100,25 @@ public class CrawlerParent {
 
         XSSFRow row;
 
-        int counter = 1;
-
-        row = spreadsheet.createRow(0);
-        HashMap<String, Object> objectFieldNames = getObjectProperties(objects.get(0));
+        int counter = 0;
+        row = spreadsheet.createRow(counter);
+        List<FieldHolder> objectFieldNames = getObjectProperties(objects.get(0));
         int cellid = 0;
-        for (String obje : objectFieldNames.keySet()) {
+        for (FieldHolder obje : objectFieldNames) {
             Cell cell = row.createCell(cellid++);
-            cell.setCellValue(obje);
+            cell.setCellValue(obje.getName());
         }
-
-
+        counter++;
         for (Object obj : objects) {
             row = spreadsheet.createRow(counter++);
-            HashMap<String, Object> objectArr = getObjectProperties(obj);
+            List<FieldHolder> objectArr = getObjectProperties(obj);
             cellid = 0;
 
-            for (Object obje : objectArr.values()) {
+            for (FieldHolder fieldHolder : objectArr) {
+                Object obje = fieldHolder.getObject();
                 Cell cell = row.createCell(cellid++);
                 if (obje == null) {
-                    cell.setCellValue("");
+                    cell.setCellValue(" ");
                 } else if (obje.getClass().equals(new String().getClass())) {
                     cell.setCellValue((String) obje);
                 } else if (obje.getClass().equals(new String[]{}.getClass())) {
@@ -126,8 +127,10 @@ public class CrawlerParent {
                         sb.append(str + ", ");
                     }
                     cell.setCellValue(sb.toString());
+                }else if(obje.getClass().isArray()){
+                    cell.setCellValue(Arrays.deepToString((Object[]) obje));
                 } else {
-                    cell.setCellValue("");
+                    cell.setCellValue(" ");
                 }
             }
         }
@@ -138,61 +141,84 @@ public class CrawlerParent {
         out.close();
     }
 
-    private static HashMap<String, Object> getObjectProperties(Object object) {
+    private static List<FieldHolder> getObjectProperties(Object object) {
 
         Class<?> cl = object.getClass();
-        HashMap<String, Object> allObjects = getObjectFieldNames(cl);
+        List<FieldHolder> allObjects = new ArrayList<>();
         for (java.lang.reflect.Field f : cl.getDeclaredFields()) {
-            f.setAccessible(true);
             try {
-                Object o = f.get(object);
-                if (!f.getName().equals("this$0")) {
-                    allObjects.put(f.getName(), o);
-                    if (o.getClass().getPackage().getName().contains(object.getClass().getPackage().getName())) {
-                        allObjects.putAll(getAllSubPropertiesOfAnObject(o));
+                synchronized (f) {
+                    f.setAccessible(true);
+                    if (object == null) {
+                        allObjects.add(new FieldHolder(f.getName(), null));
+                        if (f.getType().isArray()) {
+
+                        } else {
+                            if (f.getType().getPackage().getName().contains(cl.getPackage().getName())) {
+                                allObjects.addAll(getAllSubPropertiesOfAnObject(null, f.getType()));
+                            }
+                        }
+                    } else {
+                        Object o = f.get(object);
+                        if (!f.getName().equals("this$0")) {
+                            allObjects.add(new FieldHolder(f.getName(), o));
+                            if (f.getType().isArray()) {
+
+                            } else {
+                                if (f.getType().getPackage().getName().contains(object.getClass().getPackage().getName())) {
+                                    allObjects.addAll(getAllSubPropertiesOfAnObject(o, f.getType()));
+                                }
+                            }
+                        }
                     }
                 }
             } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("FieldName :" + f.getName());
+                System.out.println("FieldName :" + f.getType().isArray());
+                System.out.println("FieldName :" + f.getType().getComponentType());
+                System.out.println("FieldName :" + f.getType().getComponentType().getPackage().getName());
+
+                System.exit(1);
             }
         }
         return allObjects;
     }
 
-
-    private static HashMap<String, Object> getAllSubPropertiesOfAnObject(Object obj) {
+    private static List<FieldHolder> getAllSubPropertiesOfAnObject(Object object, Class<?> type) {
 
         //watch out for depth
-        Class<?> cl = obj.getClass();
-        HashMap<String, Object> allObjects = new HashMap<>();
+        Class<?> cl = type;
+        List<FieldHolder> allObjects = new ArrayList<>();
         for (java.lang.reflect.Field f : cl.getDeclaredFields()) {
-            f.setAccessible(true);
             try {
-                Object o = f.get(obj);
-                if (!f.getName().equals("this$0")) {
-                    allObjects.put(f.getName(), o);
-                    if (o.getClass().getPackage().getName().contains(obj.getClass().getPackage().getName())) {
-                        allObjects.putAll(getAllSubPropertiesOfAnObject(o));
+                synchronized (f) {
+                    f.setAccessible(true);
+                    if (object == null) {
+                        allObjects.add(new FieldHolder(f.getName(), null));
+                        if (f.getType().isArray()) {
+
+                        } else {
+                            if (f.getType().getPackage().getName().contains(cl.getPackage().getName())) {
+                                allObjects.addAll(getAllSubPropertiesOfAnObject(null, f.getType()));
+                            }
+                        }
+                    } else {
+                        Object o = f.get(object);
+                        if (!f.getName().equals("this$0")) {
+                            allObjects.add(new FieldHolder(f.getName(), o));
+                            if (f.getType().isArray()) {
+
+                            } else {
+                                if (f.getType().getPackage().getName().contains(object.getClass().getPackage().getName())) {
+                                    allObjects.addAll(getAllSubPropertiesOfAnObject(o, f.getType()));
+                                }
+                            }
+                        }
                     }
                 }
             } catch (Exception e) {
-            }
-        }
-        return allObjects;
-    }
-
-
-    private static HashMap<String, Object> getObjectFieldNames(Class<?> object) {
-        HashMap<String, Object> allObjects = new HashMap<>();
-        for (java.lang.reflect.Field f : object.getDeclaredFields()) {
-            f.setAccessible(true);
-            try {
-                if (!f.getName().equals("this$0")) {
-                    allObjects.put(f.getName().replace("__", "-").replace("_", " "), null);
-                    if (f.getType().getPackage().getName().contains(object.getPackage().getName())) {
-                        allObjects.putAll(getObjectFieldNames(f.getType()));
-                    }
-                }
-            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return allObjects;
@@ -210,6 +236,7 @@ public class CrawlerParent {
         fos.close();
 
     }
+
 }
 
 
