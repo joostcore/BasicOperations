@@ -8,9 +8,10 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
-import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class CrawlerParent {
 
@@ -42,7 +43,7 @@ public class CrawlerParent {
         CSVWriter writer = new CSVWriter(new FileWriter("listen/" + filename + ".csv"),
                 ';',
                 CSVWriter.NO_QUOTE_CHARACTER,
-                CSVWriter.DEFAULT_ESCAPE_CHARACTER,
+                CSVWriter.NO_ESCAPE_CHARACTER,
                 CSVWriter.DEFAULT_LINE_END);
 
 
@@ -53,6 +54,7 @@ public class CrawlerParent {
         int f = 0;
         for (FieldHolder s : fields) {
             field_return[f] = s.getName();
+            System.out.println(s.getName());
             f++;
         }
         writer.writeNext(field_return);
@@ -65,21 +67,20 @@ public class CrawlerParent {
             for (FieldHolder fieldHolder : properties) {
                 Object s = fieldHolder.getObject();
                 if (s == null) {
-                    prop_return[l] = " ";
+                    prop_return[l] = "";
                 } else if (s.getClass().equals(new String().getClass())) {
-                    prop_return[l] = (String) s;
+                    String string = (String) s;
+                    prop_return[l] = string.replace(";",",");
                 } else if (s.getClass().equals(new String[]{}.getClass())) {
                     StringBuilder sb = new StringBuilder();
                     for (String str : (String[]) s) {
-                        sb.append(str + ", ");
+                        sb.append(str.replace(";",",") + ", ");
                     }
                     prop_return[l] = sb.toString();
-                }
-                else if(s.getClass().isArray()){
-                    prop_return[l] = Arrays.deepToString((Object[]) s);
-                }
-                else {
-                    prop_return[l] = " ";
+                } else if (s.getClass().isArray()) {
+                    prop_return[l] = Arrays.deepToString((Object[]) s).replace(";",",");
+                } else {
+                    prop_return[l] = "";
                 }
                 l++;
             }
@@ -128,7 +129,7 @@ public class CrawlerParent {
                         sb.append(str + ", ");
                     }
                     cell.setCellValue(sb.toString());
-                }else if(obje.getClass().isArray()){
+                } else if (obje.getClass().isArray()) {
                     cell.setCellValue(Arrays.deepToString((Object[]) obje));
                 } else {
                     cell.setCellValue(" ");
@@ -150,9 +151,8 @@ public class CrawlerParent {
             try {
                 synchronized (f) {
                     f.setAccessible(true);
-                    if (object == null) {
-                        if(!Modifier.isTransient(f.getModifiers())) {
-
+                    if (!Modifier.isTransient(f.getModifiers())) {
+                        if (object == null) {
                             allObjects.add(new FieldHolder(f.getName(), null));
                             if (f.getType().isArray()) {
 
@@ -161,16 +161,16 @@ public class CrawlerParent {
                                     allObjects.addAll(getAllSubPropertiesOfAnObject(null, f.getType()));
                                 }
                             }
-                        }
-                    } else {
-                        Object o = f.get(object);
-                        if (!f.getName().equals("this$0") && !Modifier.isTransient(f.getModifiers())) {
-                            allObjects.add(new FieldHolder(f.getName(), o));
-                            if (f.getType().isArray()) {
+                        } else {
+                            Object o = f.get(object);
+                            if (!f.getName().equals("this$0") && !Modifier.isTransient(f.getModifiers())) {
+                                allObjects.add(new FieldHolder(f.getName(), o));
+                                if (f.getType().isArray()) {
 
-                            } else {
-                                if (f.getType().getPackage().getName().contains(object.getClass().getPackage().getName())) {
-                                    allObjects.addAll(getAllSubPropertiesOfAnObject(o, f.getType()));
+                                } else {
+                                    if (f.getType().getPackage().getName().contains(object.getClass().getPackage().getName())) {
+                                        allObjects.addAll(getAllSubPropertiesOfAnObject(o, f.getType()));
+                                    }
                                 }
                             }
                         }
@@ -198,8 +198,9 @@ public class CrawlerParent {
             try {
                 synchronized (f) {
                     f.setAccessible(true);
-                    if (object == null) {
-                        if(!Modifier.isTransient(f.getModifiers())) {
+
+                    if (!Modifier.isTransient(f.getModifiers())) {
+                        if (object == null) {
                             allObjects.add(new FieldHolder(f.getName(), null));
                             if (f.getType().isArray()) {
 
@@ -208,16 +209,16 @@ public class CrawlerParent {
                                     allObjects.addAll(getAllSubPropertiesOfAnObject(null, f.getType()));
                                 }
                             }
-                        }
-                    } else {
-                        Object o = f.get(object);
-                        if (!f.getName().equals("this$0") && !Modifier.isTransient(f.getModifiers())) {
-                            allObjects.add(new FieldHolder(f.getName(), o));
-                            if (f.getType().isArray()) {
+                        } else {
+                            Object o = f.get(object);
+                            if (!f.getName().equals("this$0") && !Modifier.isTransient(f.getModifiers())) {
+                                allObjects.add(new FieldHolder(f.getName(), o));
+                                if (f.getType().isArray()) {
 
-                            } else {
-                                if (f.getType().getPackage().getName().contains(object.getClass().getPackage().getName())) {
-                                    allObjects.addAll(getAllSubPropertiesOfAnObject(o, f.getType()));
+                                } else {
+                                    if (f.getType().getPackage().getName().contains(object.getClass().getPackage().getName())) {
+                                        allObjects.addAll(getAllSubPropertiesOfAnObject(o, f.getType()));
+                                    }
                                 }
                             }
                         }
