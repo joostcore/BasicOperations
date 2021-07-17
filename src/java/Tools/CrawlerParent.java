@@ -150,7 +150,7 @@ public class CrawlerParent {
             try {
                 synchronized (f) {
                     f.setAccessible(true);
-                    if (!Modifier.isTransient(f.getModifiers())) {
+                    if (!Modifier.isTransient(f.getModifiers()) && !Modifier.isPrivate(f.getModifiers())) {
                         if (object == null) {
                             allObjects.add(new FieldHolder(f.getName(), null));
                             if (f.getType().isArray()) {
@@ -162,7 +162,7 @@ public class CrawlerParent {
                             }
                         } else {
                             Object o = f.get(object);
-                            if (!f.getName().equals("this$0") && !Modifier.isTransient(f.getModifiers())) {
+                            if (!f.getName().equals("this$0") && !Modifier.isTransient(f.getModifiers()) && !Modifier.isPrivate(f.getModifiers())) {
                                 allObjects.add(new FieldHolder(f.getName(), o));
                                 if (f.getType().isArray()) {
 
@@ -198,7 +198,7 @@ public class CrawlerParent {
                 synchronized (f) {
                     f.setAccessible(true);
 
-                    if (!Modifier.isTransient(f.getModifiers())) {
+                    if (!Modifier.isTransient(f.getModifiers())&& !Modifier.isPrivate(f.getModifiers())) {
                         if (object == null) {
                             allObjects.add(new FieldHolder(f.getName(), null));
                             if (f.getType().isArray()) {
@@ -210,7 +210,7 @@ public class CrawlerParent {
                             }
                         } else {
                             Object o = f.get(object);
-                            if (!f.getName().equals("this$0") && !Modifier.isTransient(f.getModifiers())) {
+                            if (!f.getName().equals("this$0") && !Modifier.isTransient(f.getModifiers()) && !Modifier.isPrivate(f.getModifiers())) {
                                 allObjects.add(new FieldHolder(f.getName(), o));
                                 if (f.getType().isArray()) {
 
