@@ -54,7 +54,6 @@ public class CrawlerParent {
         int f = 0;
         for (FieldHolder s : fields) {
             field_return[f] = s.getName();
-            System.out.println(s.getName());
             f++;
         }
         writer.writeNext(field_return);
