@@ -142,7 +142,7 @@ public class CrawlerParent {
         out.close();
     }
 
-    private static List<FieldHolder> getObjectProperties(Object object) {
+    public static List<FieldHolder> getObjectProperties(Object object) {
 
         Class<?> cl = object.getClass();
         List<FieldHolder> allObjects = new ArrayList<>();
