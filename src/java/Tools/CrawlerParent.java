@@ -53,7 +53,7 @@ public class CrawlerParent {
         String[] field_return = new String[fields.size()];
         int f = 0;
         for (FieldHolder s : fields) {
-            field_return[f] = s.getName();
+            field_return[f] = s.getName().replace("__","-").replace("_"," ");
             f++;
         }
         writer.writeNext(field_return);
