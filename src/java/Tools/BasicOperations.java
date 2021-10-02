@@ -27,6 +27,7 @@ import org.apache.http.util.EntityUtils;
 import org.openqa.selenium.Cookie;
 
 import java.io.*;
+import java.util.Collection;
 import java.util.List;
 
 public class BasicOperations {
@@ -220,7 +221,7 @@ public class BasicOperations {
 
     }
 
-    public void setSeleniumCookies(List<Cookie> cookies){
+    public void setSeleniumCookies(Collection<Cookie> cookies){
         this.cookieMonster.httpCookieStore.addCookie(new BasicClientCookie("",""));
 
         for (Cookie cookie:cookies) {
