@@ -19,9 +19,12 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.impl.cookie.BasicClientCookie;
+import org.apache.http.impl.cookie.BasicClientCookie2;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
+import org.openqa.selenium.Cookie;
 
 import java.io.*;
 import java.util.List;
@@ -214,6 +217,20 @@ public class BasicOperations {
             }
             return return_string;
         }
+
+    }
+
+    public void setSeleniumCookies(List<Cookie> cookies){
+        this.cookieMonster.httpCookieStore.addCookie(new BasicClientCookie("",""));
+
+        for (Cookie cookie:cookies) {
+            BasicClientCookie basicClientCookie = new BasicClientCookie(cookie.getName(),cookie.getValue());
+            basicClientCookie.setDomain(cookie.getDomain());
+            basicClientCookie.setPath(cookie.getPath());
+            basicClientCookie.setExpiryDate(cookie.getExpiry());
+            this.cookieMonster.httpCookieStore.addCookie(basicClientCookie);
+        }
+
 
     }
 
