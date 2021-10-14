@@ -3,6 +3,7 @@ package Tools;
 import Tools.exceptions.Different;
 import Tools.exceptions.NotFound;
 import org.apache.http.Header;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -21,6 +22,7 @@ import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.impl.cookie.BasicClientCookie2;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
@@ -37,7 +39,27 @@ public class BasicOperations {
     public CookieMonster cookieMonster = new CookieMonster();
     HttpClient http = null;
     org.apache.http.client.config.RequestConfig RequestConfig;
-    Header[] basicHeaders;
+    Header[] basicHeaders ;
+    public Header[] defaultHeaders = new Header[]{
+
+            new BasicHeader("Accept","*/*"),
+            new BasicHeader("Accept-Encoding","gzip, deflate, br"),
+            new BasicHeader("Accept-Language","de,en-US;q=0.7,en;q=0.3"),
+
+            new BasicHeader("Cache-Control","no-cache"),
+            new BasicHeader("Connection","keep-alive"),
+
+            new BasicHeader("DNT","1"),
+
+            new BasicHeader("Pragma","no-cache"),
+
+            new BasicHeader("Sec-Fetch-Dest","empty"),
+            new BasicHeader("Sec-Fetch-Mode","no-cors"),
+            new BasicHeader("Sec-Fetch-Site","same-origin"),
+
+            new BasicHeader("User-Agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:92.0) Gecko/20100101 Firefox/92.0"),
+
+    };
 
     boolean logResponse = false;
 
@@ -106,11 +128,53 @@ public class BasicOperations {
         if (withProxy) {
             builder.setConnectionManager(cm);
         }
+
+
         builder.setDefaultCookieStore(cookieMonster.httpCookieStore);
-        builder.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:63.0) Gecko/20100101 Firefox/63.0");
+        builder.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:92.0) Gecko/20100101 Firefox/92.0");
         builder.setRedirectStrategy(new LaxRedirectStrategy());
         builder.setRetryHandler(retryHandler);
 
+
+        org.apache.http.client.config.RequestConfig.Builder requestBuilder = RequestConfig.custom();
+
+        requestBuilder.setConnectTimeout(TIME_OUT);
+        requestBuilder.setConnectionRequestTimeout(TIME_OUT);
+        requestBuilder.setSocketTimeout(60000);
+        RequestConfig = requestBuilder.build();
+
+        http = null;
+        http = builder.build();
+
+    }
+    public void buildHttpClient(HttpHost proxy) {
+
+        HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
+            @Override
+            public boolean retryRequest(IOException e, int i, HttpContext httpContext) {
+                if (i < 3) {
+                    try {
+                        Thread.sleep(TIME_OUT);
+                    } catch (InterruptedException interruptedException) {
+                        interruptedException.printStackTrace();
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        };
+
+        HttpClientBuilder builder = HttpClientBuilder.create();
+
+
+
+        builder.setDefaultCookieStore(cookieMonster.httpCookieStore);
+        builder.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:92.0) Gecko/20100101 Firefox/92.0");
+        builder.setRedirectStrategy(new LaxRedirectStrategy());
+        builder.setRetryHandler(retryHandler);
+
+        builder.setProxy(proxy);
 
         org.apache.http.client.config.RequestConfig.Builder requestBuilder = RequestConfig.custom();
 
@@ -133,9 +197,44 @@ public class BasicOperations {
         HttpResponse httpResponse = http.execute(httpGet);
 
         if (httpResponse.getStatusLine().getStatusCode() == 404) {
+            System.err.println(httpResponse.getStatusLine().getStatusCode());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new NotFound();
         } else if (httpResponse.getStatusLine().getStatusCode() != 200) {
+            System.err.println(httpResponse.getStatusLine().getStatusCode());
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
+            throw new Different();
+        } else {
+
+            String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
+            if (this.logResponse) {
+                FileWriter fileWriter = new FileWriter("json_responses.txt", true);
+                fileWriter.append("\n" + return_string);
+                fileWriter.flush();
+
+            }
+            return return_string;
+        }
+
+    }
+    public String basicGET(String url, HttpHost proxy) throws Different, NotFound, IOException {
+        buildHttpClient(proxy);
+
+        HttpGet httpGet = new HttpGet(url);
+        httpGet.setConfig(this.RequestConfig);
+        httpGet.setHeaders(basicHeaders);
+
+
+
+        HttpResponse httpResponse = http.execute(httpGet);
+
+        if (httpResponse.getStatusLine().getStatusCode() == 404) {
+            System.err.println(httpResponse.getStatusLine().getStatusCode());
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
+            throw new NotFound();
+        } else if (httpResponse.getStatusLine().getStatusCode() != 200) {
+            System.err.println(httpResponse.getStatusLine().getStatusCode());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
@@ -222,7 +321,6 @@ public class BasicOperations {
     }
 
     public void setSeleniumCookies(Collection<Cookie> cookies){
-        this.cookieMonster.httpCookieStore.addCookie(new BasicClientCookie("",""));
 
         for (Cookie cookie:cookies) {
             BasicClientCookie basicClientCookie = new BasicClientCookie(cookie.getName(),cookie.getValue());
