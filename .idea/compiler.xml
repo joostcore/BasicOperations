@@ -2,7 +2,7 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
-      <module name="BasicOperatons" target="1.8" />
+      <module name="BasicOperatons" target="9" />
     </bytecodeTargetLevel>
   </component>
 </project>

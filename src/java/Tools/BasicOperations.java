@@ -21,14 +21,17 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.impl.cookie.BasicClientCookie;
-import org.apache.http.impl.cookie.BasicClientCookie2;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 import org.openqa.selenium.Cookie;
 
-import java.io.*;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 
@@ -39,25 +42,25 @@ public class BasicOperations {
     public CookieMonster cookieMonster = new CookieMonster();
     HttpClient http = null;
     org.apache.http.client.config.RequestConfig RequestConfig;
-    Header[] basicHeaders ;
+    Header[] basicHeaders;
     public Header[] defaultHeaders = new Header[]{
 
-            new BasicHeader("Accept","*/*"),
-            new BasicHeader("Accept-Encoding","gzip, deflate, br"),
-            new BasicHeader("Accept-Language","de,en-US;q=0.7,en;q=0.3"),
+            new BasicHeader("Accept", "*/*"),
+            new BasicHeader("Accept-Encoding", "gzip, deflate, br"),
+            new BasicHeader("Accept-Language", "de,en-US;q=0.7,en;q=0.3"),
 
-            new BasicHeader("Cache-Control","no-cache"),
-            new BasicHeader("Connection","keep-alive"),
+            new BasicHeader("Cache-Control", "no-cache"),
+            new BasicHeader("Connection", "keep-alive"),
 
-            new BasicHeader("DNT","1"),
+            new BasicHeader("DNT", "1"),
 
-            new BasicHeader("Pragma","no-cache"),
+            new BasicHeader("Pragma", "no-cache"),
 
-            new BasicHeader("Sec-Fetch-Dest","empty"),
-            new BasicHeader("Sec-Fetch-Mode","no-cors"),
-            new BasicHeader("Sec-Fetch-Site","same-origin"),
+            new BasicHeader("Sec-Fetch-Dest", "empty"),
+            new BasicHeader("Sec-Fetch-Mode", "no-cors"),
+            new BasicHeader("Sec-Fetch-Site", "same-origin"),
 
-            new BasicHeader("User-Agent","Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:92.0) Gecko/20100101 Firefox/92.0"),
+            new BasicHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:92.0) Gecko/20100101 Firefox/92.0"),
 
     };
 
@@ -147,6 +150,7 @@ public class BasicOperations {
         http = builder.build();
 
     }
+
     public void buildHttpClient(HttpHost proxy) {
 
         HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
@@ -166,7 +170,6 @@ public class BasicOperations {
         };
 
         HttpClientBuilder builder = HttpClientBuilder.create();
-
 
 
         builder.setDefaultCookieStore(cookieMonster.httpCookieStore);
@@ -205,8 +208,7 @@ public class BasicOperations {
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
-
-            String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), "ISO-8859-1");
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
@@ -218,13 +220,13 @@ public class BasicOperations {
         }
 
     }
+
     public String basicGET(String url, HttpHost proxy) throws Different, NotFound, IOException {
         buildHttpClient(proxy);
 
         HttpGet httpGet = new HttpGet(url);
         httpGet.setConfig(this.RequestConfig);
         httpGet.setHeaders(basicHeaders);
-
 
 
         HttpResponse httpResponse = http.execute(httpGet);
@@ -239,7 +241,7 @@ public class BasicOperations {
             throw new Different();
         } else {
 
-            String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), "ISO-8859-1");
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
@@ -271,7 +273,7 @@ public class BasicOperations {
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
-            String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), "ISO-8859-1");
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
@@ -303,7 +305,7 @@ public class BasicOperations {
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
-            String return_string = InputStreamToStringAndClose(httpResponse.getEntity().getContent());
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), "ISO-8859-1");
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
@@ -319,10 +321,10 @@ public class BasicOperations {
 
     }
 
-    public void setSeleniumCookies(Collection<Cookie> cookies){
+    public void setSeleniumCookies(Collection<Cookie> cookies) {
 
-        for (Cookie cookie:cookies) {
-            BasicClientCookie basicClientCookie = new BasicClientCookie(cookie.getName(),cookie.getValue());
+        for (Cookie cookie : cookies) {
+            BasicClientCookie basicClientCookie = new BasicClientCookie(cookie.getName(), cookie.getValue());
             basicClientCookie.setDomain(cookie.getDomain());
             basicClientCookie.setPath(cookie.getPath());
             basicClientCookie.setExpiryDate(cookie.getExpiry());
@@ -333,23 +335,4 @@ public class BasicOperations {
     }
 
 
-    public String InputStreamToStringAndClose(InputStream in) throws IOException {
-        try {
-            StringBuilder stringBuilder = new StringBuilder();
-            Reader reader = new InputStreamReader(in, "UTF-8");
-            int data = reader.read();
-            while (data != -1) {
-                stringBuilder.append((char) data);
-                data = reader.read();
-            }
-            return stringBuilder.toString();
-        } catch (IOException ex) {
-            try {
-                in.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            throw ex;
-        }
-    }
 }
