@@ -208,7 +208,7 @@ public class BasicOperations {
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
-            String return_string = EntityUtils.toString(httpResponse.getEntity(), "ISO-8859-1");
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), Charset.defaultCharset());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
@@ -241,7 +241,7 @@ public class BasicOperations {
             throw new Different();
         } else {
 
-            String return_string = EntityUtils.toString(httpResponse.getEntity(), "ISO-8859-1");
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), Charset.defaultCharset());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
@@ -273,7 +273,7 @@ public class BasicOperations {
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
-            String return_string = EntityUtils.toString(httpResponse.getEntity(), "ISO-8859-1");
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), Charset.defaultCharset());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
@@ -305,7 +305,7 @@ public class BasicOperations {
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
-            String return_string = EntityUtils.toString(httpResponse.getEntity(), "ISO-8859-1");
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), Charset.defaultCharset());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
