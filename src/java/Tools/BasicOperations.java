@@ -296,10 +296,6 @@ public class BasicOperations {
         httpPost.setEntity(urlEncodedFormEntity);
         HttpResponse httpResponse = http.execute(httpPost);
 
-
-
-
-
         if (httpResponse.getStatusLine().getStatusCode() == 404) {
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new NotFound();
@@ -314,6 +310,9 @@ public class BasicOperations {
                 fileWriter.append("\n" + return_string);
                 fileWriter.flush();
 
+            }
+            if (return_string.isEmpty()) {
+                System.out.println(httpResponse.getStatusLine().getStatusCode() + " " + httpResponse.getStatusLine().getReasonPhrase());
             }
             return return_string;
         }
@@ -337,7 +336,7 @@ public class BasicOperations {
     public String InputStreamToStringAndClose(InputStream in) throws IOException {
         try {
             StringBuilder stringBuilder = new StringBuilder();
-            Reader reader = new InputStreamReader(in);
+            Reader reader = new InputStreamReader(in, "UTF-8");
             int data = reader.read();
             while (data != -1) {
                 stringBuilder.append((char) data);
