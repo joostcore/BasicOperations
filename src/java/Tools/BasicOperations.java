@@ -208,7 +208,9 @@ public class BasicOperations {
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
-            String return_string = EntityUtils.toString(httpResponse.getEntity(), Charset.defaultCharset());
+
+            Header encoding = httpResponse.getEntity().getContentEncoding();
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), encoding == null ? "UTF-8" : encoding.getValue());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
@@ -241,7 +243,8 @@ public class BasicOperations {
             throw new Different();
         } else {
 
-            String return_string = EntityUtils.toString(httpResponse.getEntity(), Charset.defaultCharset());
+            Header encoding = httpResponse.getEntity().getContentEncoding();
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), encoding == null ? "UTF-8" : encoding.getValue());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
@@ -273,7 +276,8 @@ public class BasicOperations {
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
-            String return_string = EntityUtils.toString(httpResponse.getEntity(), Charset.defaultCharset());
+            Header encoding = httpResponse.getEntity().getContentEncoding();
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), encoding == null ? "UTF-8" : encoding.getValue());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
@@ -305,7 +309,8 @@ public class BasicOperations {
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             throw new Different();
         } else {
-            String return_string = EntityUtils.toString(httpResponse.getEntity(), Charset.defaultCharset());
+            Header encoding = httpResponse.getEntity().getContentEncoding();
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), encoding == null ? "UTF-8" : encoding.getValue());
             EntityUtils.consumeQuietly(httpResponse.getEntity());
             if (this.logResponse) {
                 FileWriter fileWriter = new FileWriter("json_responses.txt", true);
