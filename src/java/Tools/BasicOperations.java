@@ -223,6 +223,38 @@ public class BasicOperations {
 
     }
 
+    public HttpResponse basicGETWithBody(String url) throws Different, NotFound, IOException {
+
+        HttpGet httpGet = new HttpGet(url);
+        httpGet.setConfig(this.RequestConfig);
+        httpGet.setHeaders(basicHeaders);
+
+        HttpResponse httpResponse = http.execute(httpGet);
+
+        if (httpResponse.getStatusLine().getStatusCode() == 404) {
+            System.err.println(httpResponse.getStatusLine().getStatusCode());
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
+            throw new NotFound();
+        } else if (httpResponse.getStatusLine().getStatusCode() != 200) {
+            System.err.println(httpResponse.getStatusLine().getStatusCode());
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
+            throw new Different();
+        } else {
+
+            Header encoding = httpResponse.getEntity().getContentEncoding();
+            String return_string = EntityUtils.toString(httpResponse.getEntity(), encoding == null ? "UTF-8" : encoding.getValue());
+            EntityUtils.consumeQuietly(httpResponse.getEntity());
+            if (this.logResponse) {
+                FileWriter fileWriter = new FileWriter("json_responses.txt", true);
+                fileWriter.append("\n" + return_string);
+                fileWriter.flush();
+
+            }
+            return httpResponse;
+        }
+
+    }
+
     public String basicGET(String url, HttpHost proxy) throws Different, NotFound, IOException {
         buildHttpClient(proxy);
 
