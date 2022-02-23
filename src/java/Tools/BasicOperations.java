@@ -38,7 +38,7 @@ import java.util.List;
 public class BasicOperations {
 
 
-    final int TIME_OUT = 15000;
+    int TIME_OUT = 15000;
     public CookieMonster cookieMonster = new CookieMonster();
     HttpClient http = null;
     org.apache.http.client.config.RequestConfig RequestConfig;
@@ -102,6 +102,13 @@ public class BasicOperations {
 
     }
 
+    public BasicOperations(int timeout) {
+        //refreshHeader();
+        this.TIME_OUT = timeout;
+        this.withProxy = false;
+        buildHttpClient();
+
+    }
     public void buildHttpClient() {
 
         HttpRequestRetryHandler retryHandler = new HttpRequestRetryHandler() {
@@ -143,7 +150,7 @@ public class BasicOperations {
 
         requestBuilder.setConnectTimeout(TIME_OUT);
         requestBuilder.setConnectionRequestTimeout(TIME_OUT);
-        requestBuilder.setSocketTimeout(60000);
+        requestBuilder.setSocketTimeout(TIME_OUT);
         RequestConfig = requestBuilder.build();
 
         http = null;
